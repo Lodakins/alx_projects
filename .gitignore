@@ -22,6 +22,7 @@ npm-debug.log*
 coverage/
 www/
 ./udacity-c2-restapi/node_modules/
+./udacity-c2-restapi/www/
 tmp/
 temp/
 platforms/
