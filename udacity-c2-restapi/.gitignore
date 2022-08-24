@@ -13,6 +13,8 @@ log.txt
 npm-debug.log*
 .env
 
+*.zip
+
 .idea/
 .ionic/
 .sourcemaps/
