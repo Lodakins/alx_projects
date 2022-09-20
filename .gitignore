@@ -13,10 +13,6 @@ log.txt
 npm-debug.log*
 .env
 
-.env
-
-*.zip
-
 .idea/
 .ionic/
 .sourcemaps/
@@ -25,7 +21,8 @@ npm-debug.log*
 .versions/
 coverage/
 www/
-node_modules/
+./udacity-c2-restapi/node_modules/
+./udacity-c2-restapi/www/
 tmp/
 temp/
 platforms/
