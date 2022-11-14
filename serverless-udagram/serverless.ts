@@ -23,6 +23,9 @@ const serverlessConfiguration: AWS = {
       IMAGE_ID_INDEX: 'ImageIdIndex',
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
+      IMAGES_S3_BUCKET: 'serverless-udagram-images-${self:provider.stage}',
+      SIGNED_URL_EXPIRATION: '300',
+      THUMBNAILS_S3_BUCKET: 'serverless-udagram-thumbnail-${self:provider.stage}'
     },
     profile: 'serverless',
     stage: "${opt:stage, 'dev'}",
@@ -57,6 +60,7 @@ const serverlessConfiguration: AWS = {
   functions: { hello, groups ,createGroup, createImage, getImages},
   package: { individually: true },
   custom: {
+    topicName: 'imagesTopic-${self:provider.stage}',
     esbuild: {
       bundle: true,
       minify: false,
@@ -84,7 +88,7 @@ const serverlessConfiguration: AWS = {
       ]
     }
   },
-  resources: {
+  "resources": {
     "Resources": {
       "GroupsDynamoDBTable": {
         "Type": "AWS::DynamoDB::Table",
@@ -133,6 +137,9 @@ const serverlessConfiguration: AWS = {
             }
           ],
           "BillingMode": "PAY_PER_REQUEST",
+          "StreamSpecification": {
+            "StreamViewType": "NEW_IMAGE"
+          },
           "TableName": "${self:provider.environment.IMAGES_TABLE}",
           "GlobalSecondaryIndexes": [
             {
@@ -150,7 +157,26 @@ const serverlessConfiguration: AWS = {
           ]
         }
       },
-      RequestBodyValidator: {
+      "WebSocketConnectionsDynamoDBTable": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST",
+          "TableName": "${self:provider.environment.CONNECTIONS_TABLE}"
+        }
+      },
+      "RequestBodyValidator": {
         "Type": "AWS::ApiGateway::RequestValidator",
         "Properties": {
           "Name": "request-body-validator",
@@ -159,6 +185,99 @@ const serverlessConfiguration: AWS = {
           },
           "ValidateRequestBody": true,
           "ValidateRequestParameters": false
+        }
+      },
+      "AttachmentsBucket": {
+        "Type": "AWS::S3::Bucket",
+        DependsOn: 'SNSTopicPolicy',
+        "Properties": {
+          "BucketName": "${self:provider.environment.IMAGES_S3_BUCKET}",
+          "NotificationConfiguration": {
+            "TopicConfigurations": [
+              {
+                "Event": "s3:ObjectCreated:Put",
+                "Topic": "ImagesTopic"
+              }
+            ]
+          },
+          "CorsConfiguration": {
+            "CorsRules": [
+              {
+                "AllowedOrigins": [
+                  "*"
+                ],
+                "AllowedHeaders": [
+                  "*"
+                ],
+                "AllowedMethods": [
+                  "GET",
+                  "PUT",
+                  "POST",
+                  "DELETE",
+                  "HEAD"
+                ],
+                "MaxAge": 3000
+              }
+            ]
+          }
+        }
+      },
+      "BucketPolicy": {
+        "Type": "AWS::S3::BucketPolicy",
+        "Properties": {
+          "PolicyDocument": {
+            "Id": "MyPolicy",
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadForGetBucketObjects",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*"
+              }
+            ]
+          },
+          "Bucket": "AttachmentsBucket"
+        }
+      },
+      "SNSTopicPolicy": {
+        "Type": "AWS::SNS::TopicPolicy",
+        "Properties": {
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": "sns:Publish",
+                "Resource": "ImagesTopic",
+                "Condition": {
+                  "ArnLike": {
+                    "AWS:SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
+                  }
+                }
+              }
+            ]
+          },
+          "Topics": [
+            "ImagesTopic"
+          ]
+        }
+      },
+      "ThumbnailsBucket": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+          "BucketName": "${self:provider.environment.THUMBNAILS_S3_BUCKET}"
+        }
+      },
+      "ImagesTopic": {
+        "Type": "AWS::SNS::Topic",
+        "Properties": {
+          "DisplayName": "Image bucket topic",
+          "TopicName": "${self:custom.topicName}"
         }
       }
     }

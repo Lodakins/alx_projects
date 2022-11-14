@@ -1,6 +1,5 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register';
-import { middyfy } from '@libs/lambda'
 import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 
@@ -76,5 +75,3 @@ async function createImage(groupId: string, imageId: string, event: any) {
 
   return newItem
 }
-
-export default handler;
