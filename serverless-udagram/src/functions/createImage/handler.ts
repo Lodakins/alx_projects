@@ -77,4 +77,4 @@ async function createImage(groupId: string, imageId: string, event: any) {
   return newItem
 }
 
-export const main = middyfy(handler);
+export default handler;

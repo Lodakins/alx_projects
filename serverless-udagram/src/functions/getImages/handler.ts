@@ -65,4 +65,4 @@ async function getImagesPerGroup(groupId: string) {
   return result.Items
 }
 
-export const main = middyfy(handler);
+export default handler;

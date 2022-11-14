@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register'
 import * as AWS  from 'aws-sdk'
-import { middyfy } from '@libs/lambda'
 
 const docClient = new AWS.DynamoDB.DocumentClient()
 
@@ -27,4 +26,4 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   }
 }
 
-export const main = middyfy(handler);
+export default handler;

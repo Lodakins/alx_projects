@@ -35,4 +35,4 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   }
 }
 
-export const main = middyfy(handler);
+export default handler;
