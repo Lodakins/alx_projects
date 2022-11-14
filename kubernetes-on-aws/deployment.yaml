@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-app
+  name: simple-node-app
   labels:
-    app: my-app
+    app: simple-node-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: my-app
+      app: simple-node-app
   template:
     metadata:
       labels:
-        app: node-app
+        app: simple-node-app
     spec:
       containers:
       - name: simple-node
         image: lodakins/simple-node
         ports:
-        - containerPort: 80
+        - containerPort: 8080
