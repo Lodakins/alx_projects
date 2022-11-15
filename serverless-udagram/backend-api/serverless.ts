@@ -8,6 +8,7 @@ import getImages from '@functions/getImages';
 import connect from '@functions/connect';
 import disconnect from '@functions/disconnect';
 import sendNotifications from '@functions/sendNotifications';
+import resizeImage from '@functions/resizeImage';
 
 const serverlessConfiguration: AWS = {
   service: 'serverless-udagram',
@@ -86,7 +87,7 @@ const serverlessConfiguration: AWS = {
     ]
   },
   // import the function via paths
-  functions: { hello, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications},
+  functions: { hello, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications, resizeImage},
   package: { individually: true },
   custom: {
     topicName: 'imagesTopic-${self:provider.stage}',
@@ -119,6 +120,20 @@ const serverlessConfiguration: AWS = {
   },
   "resources": {
     "Resources": {
+      "GatewayResponseDefault4XX": {
+        "Type": "AWS::ApiGateway::GatewayResponse",
+        "Properties": {
+          "ResponseParameters": {
+            "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+            "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+            "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,OPTIONS,POST'"
+          },
+          "ResponseType": "DEFAULT_4XX",
+          "RestApiId": {
+            "Ref": "ApiGatewayRestApi"
+          }
+        }
+      },
       "GroupsDynamoDBTable": {
         "Type": "AWS::DynamoDB::Table",
         "Properties": {
@@ -218,7 +233,7 @@ const serverlessConfiguration: AWS = {
       },
       "AttachmentsBucket": {
         "Type": "AWS::S3::Bucket",
-        "DependsOn": ['SNSTopicPolicy'],
+        "DependsOn": ["SNSTopicPolicy"],
         "Properties": {
           "BucketName": "${self:provider.environment.IMAGES_S3_BUCKET}",
           "NotificationConfiguration": {
@@ -307,6 +322,87 @@ const serverlessConfiguration: AWS = {
         "Properties": {
           "DisplayName": "Image bucket topic",
           "TopicName": "${self:custom.topicName}"
+        }
+      },
+      "ImagesSearch": {
+        "Type": "AWS::Elasticsearch::Domain",
+        "Properties": {
+          "ElasticsearchVersion": "6.3",
+          "DomainName": "images-search-${self:provider.stage}",
+          "ElasticsearchClusterConfig": {
+            "DedicatedMasterEnabled": false,
+            "InstanceCount": "1",
+            "ZoneAwarenessEnabled": false,
+            "InstanceType": "t2.small.elasticsearch"
+          },
+          "EBSOptions": {
+            "EBSEnabled": true,
+            "Iops": 0,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          },
+          "AccessPolicies": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": "es:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      },
+      "KMSKey": {
+        "Type": "AWS::KMS::Key",
+        "Properties": {
+          "Description": "KMS key to encrypt Auth0 secret",
+          "KeyPolicy": {
+            "Version": "2012-10-17",
+            "Id": "key-default-1",
+            "Statement": [
+              {
+                "Sid": "Allow administration of the key",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": {
+                    "Fn::Join": [
+                      ":",
+                      [
+                        "arn:aws:iam:",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        "root"
+                      ]
+                    ]
+                  }
+                },
+                "Action": [
+                  "kms:*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      },
+      "KMSKeyAlias": {
+        "Type": "AWS::KMS::Alias",
+        "Properties": {
+          "AliasName": "alias/auth0Key-${self:provider.stage}",
+          "TargetKeyId": "KMSKey"
+        }
+      },
+      "Auth0Secret": {
+        "Type": "AWS::SecretsManager::Secret",
+        "Properties": {
+          "Name": "${self:provider.environment.AUTH_0_SECRET_ID}",
+          "Description": "Auth0 secret",
+          "KmsKeyId": "KMSKey"
         }
       }
     }

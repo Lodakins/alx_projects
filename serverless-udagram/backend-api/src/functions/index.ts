@@ -7,3 +7,4 @@ export { default as createImage } from './createImage';
 export { default as connect } from './connect';
 export { default as disconnect } from './disconnect';
 export { default as sendNotifications } from './sendNotifications';
+export { default as resizeImage } from './resizeImage';
