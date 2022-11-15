@@ -9,6 +9,8 @@ import connect from '@functions/connect';
 import disconnect from '@functions/disconnect';
 import sendNotifications from '@functions/sendNotifications';
 import resizeImage from '@functions/resizeImage';
+import auth from '@functions/auth';
+import rsaAuth from  '@functions/rsaAuth';
 
 const serverlessConfiguration: AWS = {
   service: 'serverless-udagram',
@@ -112,7 +114,7 @@ const serverlessConfiguration: AWS = {
     ]
   },
   // import the function via paths
-  functions: { hello, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications, resizeImage},
+  functions: { hello, auth, rsaAuth, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications, resizeImage},
   package: { individually: true },
   custom: {
     topicName: 'imagesTopic-${self:provider.stage}',
