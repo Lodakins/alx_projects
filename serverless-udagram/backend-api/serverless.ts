@@ -4,7 +4,10 @@ import hello from '@functions/hello';
 import groups from '@functions/getGroups'
 import createGroup from '@functions/createGroup';
 import createImage from '@functions/createImage';
-import getImages from '@functions/getImages'
+import getImages from '@functions/getImages';
+import connect from '@functions/connect';
+import disconnect from '@functions/disconnect';
+import sendNotifications from '@functions/sendNotifications';
 
 const serverlessConfiguration: AWS = {
   service: 'serverless-udagram',
@@ -25,7 +28,8 @@ const serverlessConfiguration: AWS = {
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       IMAGES_S3_BUCKET: 'serverless-udagram-images-${self:provider.stage}',
       SIGNED_URL_EXPIRATION: '300',
-      THUMBNAILS_S3_BUCKET: 'serverless-udagram-thumbnail-${self:provider.stage}'
+      THUMBNAILS_S3_BUCKET: 'serverless-udagram-thumbnail-${self:provider.stage}',
+      CONNECTIONS_TABLE: 'Connections-${self:provider.stage}'
     },
     profile: 'serverless',
     stage: "${opt:stage, 'dev'}",
@@ -43,6 +47,7 @@ const serverlessConfiguration: AWS = {
       {
         "Effect": "Allow",
         "Action": [
+          "dynamodb:PutItem",
           "dynamodb:Query"
         ],
         "Resource": "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}"
@@ -53,11 +58,35 @@ const serverlessConfiguration: AWS = {
           "dynamodb:Query"
         ],
         "Resource": "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject",
+          "s3:GetObject"
+        ],
+        "Resource": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject"
+        ],
+        "Resource": "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:Scan",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ],
+        "Resource": "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
       }
-    ],
+    ]
   },
   // import the function via paths
-  functions: { hello, groups ,createGroup, createImage, getImages},
+  functions: { hello, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications},
   package: { individually: true },
   custom: {
     topicName: 'imagesTopic-${self:provider.stage}',
@@ -189,7 +218,7 @@ const serverlessConfiguration: AWS = {
       },
       "AttachmentsBucket": {
         "Type": "AWS::S3::Bucket",
-        DependsOn: 'SNSTopicPolicy',
+        "DependsOn": ['SNSTopicPolicy'],
         "Properties": {
           "BucketName": "${self:provider.environment.IMAGES_S3_BUCKET}",
           "NotificationConfiguration": {
