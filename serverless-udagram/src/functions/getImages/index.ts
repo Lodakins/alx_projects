@@ -1,3 +1,4 @@
+import schema from './schema';
 import { handlerPath } from '@libs/handler-resolver';
 
 export default {
@@ -6,7 +7,12 @@ export default {
     {
       http: {
         method: 'get',
-        path: 'groups',
+        path: "groups/{groupId}/images",
+        request: {
+          schemas: {
+            'application/json': schema,
+          },
+        },
       },
     },
   ],

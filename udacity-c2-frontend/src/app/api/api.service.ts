@@ -1,5 +1,9 @@
 import { Injectable } from '@angular/core';
+<<<<<<< HEAD
+import { HttpClient, HttpHeaders,  HttpErrorResponse, HttpRequest, HttpEvent, HttpEventType } from '@angular/common/http';
+=======
 import { HttpClient, HttpHeaders,  HttpErrorResponse, HttpRequest, HttpEvent } from '@angular/common/http';
+>>>>>>> 3767328d6688ec4e2f5454912d2b42fe57885fa8
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 import { FeedItem } from '../feed/models/feed-item.model';
@@ -43,6 +47,10 @@ export class ApiService {
 
   post(endpoint, data): Promise<any> {
     const url = `${API_HOST}${endpoint}`;
+<<<<<<< HEAD
+    console.log(url);
+=======
+>>>>>>> 3767328d6688ec4e2f5454912d2b42fe57885fa8
     return this.http.post<HttpEvent<any>>(url, data, this.httpOptions)
             .toPromise()
             .catch((e) => {
