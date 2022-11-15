@@ -30,12 +30,23 @@ const serverlessConfiguration: AWS = {
       IMAGES_S3_BUCKET: 'serverless-udagram-images-${self:provider.stage}',
       SIGNED_URL_EXPIRATION: '300',
       THUMBNAILS_S3_BUCKET: 'serverless-udagram-thumbnail-${self:provider.stage}',
-      CONNECTIONS_TABLE: 'Connections-${self:provider.stage}'
+      CONNECTIONS_TABLE: 'Connections-${self:provider.stage}',
+      AUTH_0_SECRET_ID: 'Auth0Secret-${self:provider.stage}',
+      AUTH_0_SECRET_FIELD: 'auth0Secret'
     },
     profile: 'serverless',
     stage: "${opt:stage, 'dev'}",
     region: 'us-east-1',
-    iamRoleStatements: [
+    "iamRoleStatements": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "codedeploy:*"
+        ],
+        "Resource": [
+          "*"
+        ]
+      },
       {
         "Effect": "Allow",
         "Action": [
@@ -83,6 +94,20 @@ const serverlessConfiguration: AWS = {
           "dynamodb:DeleteItem"
         ],
         "Resource": "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "secretsmanager:GetSecretValue"
+        ],
+        "Resource": "Auth0Secret"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "kms:Decrypt"
+        ],
+        "Resource": "KMSKey.Arn"
       }
     ]
   },
@@ -324,38 +349,38 @@ const serverlessConfiguration: AWS = {
           "TopicName": "${self:custom.topicName}"
         }
       },
-      "ImagesSearch": {
-        "Type": "AWS::Elasticsearch::Domain",
-        "Properties": {
-          "ElasticsearchVersion": "6.3",
-          "DomainName": "images-search-${self:provider.stage}",
-          "ElasticsearchClusterConfig": {
-            "DedicatedMasterEnabled": false,
-            "InstanceCount": "1",
-            "ZoneAwarenessEnabled": false,
-            "InstanceType": "t2.small.elasticsearch"
-          },
-          "EBSOptions": {
-            "EBSEnabled": true,
-            "Iops": 0,
-            "VolumeSize": 10,
-            "VolumeType": "gp2"
-          },
-          "AccessPolicies": {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": "*"
-                },
-                "Action": "es:*",
-                "Resource": "*"
-              }
-            ]
-          }
-        }
-      },
+      // "ImagesSearch": {
+      //   "Type": "AWS::Elasticsearch::Domain",
+      //   "Properties": {
+      //     "ElasticsearchVersion": "6.3",
+      //     "DomainName": "images-search-${self:provider.stage}",
+      //     "ElasticsearchClusterConfig": {
+      //       "DedicatedMasterEnabled": false,
+      //       "InstanceCount": "1",
+      //       "ZoneAwarenessEnabled": false,
+      //       "InstanceType": "t2.small.elasticsearch"
+      //     },
+      //     "EBSOptions": {
+      //       "EBSEnabled": true,
+      //       "Iops": 0,
+      //       "VolumeSize": 10,
+      //       "VolumeType": "gp2"
+      //     },
+      //     "AccessPolicies": {
+      //       "Version": "2012-10-17",
+      //       "Statement": [
+      //         {
+      //           "Effect": "Allow",
+      //           "Principal": {
+      //             "AWS": "*"
+      //           },
+      //           "Action": "es:*",
+      //           "Resource": "*"
+      //         }
+      //       ]
+      //     }
+      //   }
+      // },
       "KMSKey": {
         "Type": "AWS::KMS::Key",
         "Properties": {
