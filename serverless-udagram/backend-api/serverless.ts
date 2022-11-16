@@ -267,7 +267,7 @@ const serverlessConfiguration: AWS = {
             "TopicConfigurations": [
               {
                 "Event": "s3:ObjectCreated:Put",
-                "Topic": "ImagesTopic"
+                "Topic": {"Ref":"ImagesTopic"}
               }
             ]
           },
@@ -309,7 +309,7 @@ const serverlessConfiguration: AWS = {
               }
             ]
           },
-          "Bucket": "AttachmentsBucket"
+          "Bucket": {"Ref":"AttachmentsBucket"}
         }
       },
       "SNSTopicPolicy": {
@@ -324,7 +324,7 @@ const serverlessConfiguration: AWS = {
                   "AWS": "*"
                 },
                 "Action": "sns:Publish",
-                "Resource": "ImagesTopic",
+                "Resource": {"Ref":"ImagesTopic"},
                 "Condition": {
                   "ArnLike": {
                     "AWS:SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
@@ -334,7 +334,7 @@ const serverlessConfiguration: AWS = {
             ]
           },
           "Topics": [
-            "ImagesTopic"
+             {"Ref":"ImagesTopic"}
           ]
         }
       },
@@ -421,7 +421,7 @@ const serverlessConfiguration: AWS = {
         "Type": "AWS::KMS::Alias",
         "Properties": {
           "AliasName": "alias/auth0Key-${self:provider.stage}",
-          "TargetKeyId": "KMSKey"
+          "TargetKeyId": {"Ref":"KMSKey"}
         }
       },
       "Auth0Secret": {
@@ -429,7 +429,7 @@ const serverlessConfiguration: AWS = {
         "Properties": {
           "Name": "${self:provider.environment.AUTH_0_SECRET_ID}",
           "Description": "Auth0 secret",
-          "KmsKeyId": "KMSKey"
+          "KmsKeyId":  {"Ref":"KMSKey"}
         }
       }
     }
