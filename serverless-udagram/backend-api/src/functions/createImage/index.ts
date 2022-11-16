@@ -1,4 +1,3 @@
-import schema from './schema';
 import { handlerPath } from '@libs/handler-resolver';
 
 export default {
@@ -8,11 +7,14 @@ export default {
       http: {
         method: 'post',
         path: 'groups/{groupId}/images',
-        request: {
-          schemas: {
-            'application/json': schema,
-          },
-        },
+        reqValidatorName: "RequestBodyValidator",
+        documentation: {
+          "summary": "Create a new image for a group",
+          "description": "Create a new image for a group",
+          "requestModels": {
+            "application/json": "ImageRequest"
+          }
+        }
       },
     },
   ],

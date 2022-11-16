@@ -32,7 +32,7 @@ export const handler = middy(async (event: APIGatewayProxyEvent): Promise<APIGat
   const imageId = uuid.v4()
   const newItem = await createImage(groupId, imageId, event)
 
-  const url = getUploadUrl(imageId)
+   const url = getUploadUrl(imageId)
 
   return {
     statusCode: 201,
