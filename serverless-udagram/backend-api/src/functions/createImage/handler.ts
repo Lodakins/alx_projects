@@ -34,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   const newItem = await createImage(groupId, imageId, event)
 
-  const url = getUploadUrl(imageId)
+   const url = getUploadUrl(imageId)
 
   return {
     statusCode: 201,
@@ -72,6 +72,7 @@ async function createImage(groupId: string, imageId: string, event: any) {
     timestamp,
     imageId,
     ...newImage,
+    imageUrl: `https://${bucketName}.s3.amazonaws.com/${imageId}`
   }
   console.log('Storing new item: ', newItem)
 

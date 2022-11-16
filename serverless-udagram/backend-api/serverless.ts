@@ -5,10 +5,11 @@ import groups from '@functions/getGroups'
 import createGroup from '@functions/createGroup';
 import createImage from '@functions/createImage';
 import getImages from '@functions/getImages';
+import getImage from '@functions/getImage';
 import connect from '@functions/connect';
 import disconnect from '@functions/disconnect';
 import sendNotifications from '@functions/sendNotifications';
-import resizeImage from '@functions/resizeImage';
+// import resizeImage from '@functions/resizeImage';
 
 const serverlessConfiguration: AWS = {
   service: 'serverless-udagram',
@@ -22,14 +23,14 @@ const serverlessConfiguration: AWS = {
       shouldStartNameWithService: true,
     },
     environment: {
-      GROUPS_TABLE: 'Group-${self:provider.stage}',
-      IMAGES_TABLE: 'Image-${self:provider.stage}',
+      GROUPS_TABLE: 'Groups-${self:provider.stage}',
+      IMAGES_TABLE: 'Images-${self:provider.stage}',
       IMAGE_ID_INDEX: 'ImageIdIndex',
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
-      IMAGES_S3_BUCKET: 'serverless-udagram-images-${self:provider.stage}',
+      IMAGES_S3_BUCKET: 'lodakins999-udagram-images-${self:provider.stage}',
       SIGNED_URL_EXPIRATION: '300',
-      THUMBNAILS_S3_BUCKET: 'serverless-udagram-thumbnail-${self:provider.stage}',
+      THUMBNAILS_S3_BUCKET: 'lodakins999-udagram-thumbnail-${self:provider.stage}',
       CONNECTIONS_TABLE: 'Connections-${self:provider.stage}',
       AUTH_0_SECRET_ID: 'Auth0Secret-${self:provider.stage}',
       AUTH_0_SECRET_FIELD: 'auth0Secret'
@@ -79,13 +80,13 @@ const serverlessConfiguration: AWS = {
         ],
         "Resource": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*"
       },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "s3:PutObject"
-        ],
-        "Resource": "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
-      },
+      // {
+      //   "Effect": "Allow",
+      //   "Action": [
+      //     "s3:PutObject"
+      //   ],
+      //   "Resource": "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
+      // },
       {
         "Effect": "Allow",
         "Action": [
@@ -95,24 +96,24 @@ const serverlessConfiguration: AWS = {
         ],
         "Resource": "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
       },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "secretsmanager:GetSecretValue"
-        ],
-        "Resource": "Auth0Secret"
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "kms:Decrypt"
-        ],
-        "Resource": "KMSKey.Arn"
-      }
+      // {
+      //   "Effect": "Allow",
+      //   "Action": [
+      //     "secretsmanager:GetSecretValue"
+      //   ],
+      //   "Resource": "Auth0Secret"
+      // },
+      // {
+      //   "Effect": "Allow",
+      //   "Action": [
+      //     "kms:Decrypt"
+      //   ],
+      //   "Resource": "KMSKey.Arn"
+      // }
     ]
   },
   // import the function via paths
-  functions: { hello, groups ,createGroup, createImage, getImages, connect, disconnect,sendNotifications, resizeImage},
+  functions: { hello, groups ,createGroup, createImage, getImages, getImage, connect, disconnect, sendNotifications},
   package: { individually: true },
   custom: {
     topicName: 'imagesTopic-${self:provider.stage}',
@@ -139,6 +140,11 @@ const serverlessConfiguration: AWS = {
           "name": "GroupRequest",
           "contentType": "application/json",
           "schema": "${file(models/create-group-request.json)}"
+        },
+        {
+          "name": "ImageRequest",
+          "contentType": "application/json",
+          "schema": "${file(models/create-image-request.json)}"
         }
       ]
     }
@@ -258,14 +264,16 @@ const serverlessConfiguration: AWS = {
       },
       "AttachmentsBucket": {
         "Type": "AWS::S3::Bucket",
-        "DependsOn": ["SNSTopicPolicy"],
+        // "DependsOn": ["SNSTopicPolicy"],
         "Properties": {
           "BucketName": "${self:provider.environment.IMAGES_S3_BUCKET}",
           "NotificationConfiguration": {
-            "TopicConfigurations": [
+            "LambdaConfigurations": [
               {
-                "Event": "s3:ObjectCreated:Put",
-                "Topic": "ImagesTopic"
+                "Event": "s3:ObjectCreated:*",
+                "Function": {
+                  "!GetAtt": "sendNotificationsLambdaFunction.Arn"
+                }
               }
             ]
           },
@@ -307,48 +315,61 @@ const serverlessConfiguration: AWS = {
               }
             ]
           },
-          "Bucket": "AttachmentsBucket"
+          "Bucket": {
+            "Ref": "AttachmentsBucket"
+          }
         }
       },
-      "SNSTopicPolicy": {
-        "Type": "AWS::SNS::TopicPolicy",
-        "Properties": {
-          "PolicyDocument": {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": "*"
-                },
-                "Action": "sns:Publish",
-                "Resource": "ImagesTopic",
-                "Condition": {
-                  "ArnLike": {
-                    "AWS:SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
-                  }
-                }
-              }
-            ]
-          },
-          "Topics": [
-            "ImagesTopic"
-          ]
+      "SendNotificationPermission": {
+          "Type": "AWS::Lambda::Permission",
+          "Properties": {
+            "FunctionName": { "Ref" : "sendNotificationsLambdaFunction"},
+            "Principal": "s3.amazonaws.com",
+            "Action": "Lambda:InvokeFunction",
+            "SourceAccount" :{ "Ref" : "AWS::AccountId"},
+            "SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
+          }
         }
-      },
-      "ThumbnailsBucket": {
-        "Type": "AWS::S3::Bucket",
-        "Properties": {
-          "BucketName": "${self:provider.environment.THUMBNAILS_S3_BUCKET}"
-        }
-      },
-      "ImagesTopic": {
-        "Type": "AWS::SNS::Topic",
-        "Properties": {
-          "DisplayName": "Image bucket topic",
-          "TopicName": "${self:custom.topicName}"
-        }
-      },
+      // "SNSTopicPolicy": {
+      //   "Type": "AWS::SNS::TopicPolicy",
+      //   "Properties": {
+      //     "PolicyDocument": {
+      //       "Version": "2012-10-17",
+      //       "Statement": [
+      //         {
+      //           "Effect": "Allow",
+      //           "Principal": {
+      //             "AWS": "*"
+      //           },
+      //           "Action": "sns:Publish",
+      //           "Resource": "ImagesTopic",
+      //           "Condition": {
+      //             "ArnLike": {
+      //               "AWS:SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
+      //             }
+      //           }
+      //         }
+      //       ]
+      //     },
+      //     "Topics": [{
+      //       "Ref": "ImagesTopic"
+      //      }
+      //     ]
+      //   }
+      // },
+      // "ThumbnailsBucket": {
+      //   "Type": "AWS::S3::Bucket",
+      //   "Properties": {
+      //     "BucketName": "${self:provider.environment.THUMBNAILS_S3_BUCKET}"
+      //   }
+      // },
+      // "ImagesTopic": {
+      //   "Type": "AWS::SNS::Topic",
+      //   "Properties": {
+      //     "DisplayName": "Image bucket topic",
+      //     "TopicName": "${self:custom.topicName}"
+      //   }
+      // },
       // "ImagesSearch": {
       //   "Type": "AWS::Elasticsearch::Domain",
       //   "Properties": {
@@ -381,55 +402,55 @@ const serverlessConfiguration: AWS = {
       //     }
       //   }
       // },
-      "KMSKey": {
-        "Type": "AWS::KMS::Key",
-        "Properties": {
-          "Description": "KMS key to encrypt Auth0 secret",
-          "KeyPolicy": {
-            "Version": "2012-10-17",
-            "Id": "key-default-1",
-            "Statement": [
-              {
-                "Sid": "Allow administration of the key",
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": {
-                    "Fn::Join": [
-                      ":",
-                      [
-                        "arn:aws:iam:",
-                        {
-                          "Ref": "AWS::AccountId"
-                        },
-                        "root"
-                      ]
-                    ]
-                  }
-                },
-                "Action": [
-                  "kms:*"
-                ],
-                "Resource": "*"
-              }
-            ]
-          }
-        }
-      },
-      "KMSKeyAlias": {
-        "Type": "AWS::KMS::Alias",
-        "Properties": {
-          "AliasName": "alias/auth0Key-${self:provider.stage}",
-          "TargetKeyId": "KMSKey"
-        }
-      },
-      "Auth0Secret": {
-        "Type": "AWS::SecretsManager::Secret",
-        "Properties": {
-          "Name": "${self:provider.environment.AUTH_0_SECRET_ID}",
-          "Description": "Auth0 secret",
-          "KmsKeyId": "KMSKey"
-        }
-      }
+      // "KMSKey": {
+      //   "Type": "AWS::KMS::Key",
+      //   "Properties": {
+      //     "Description": "KMS key to encrypt Auth0 secret",
+      //     "KeyPolicy": {
+      //       "Version": "2012-10-17",
+      //       "Id": "key-default-1",
+      //       "Statement": [
+      //         {
+      //           "Sid": "Allow administration of the key",
+      //           "Effect": "Allow",
+      //           "Principal": {
+      //             "AWS": {
+      //               "Fn::Join": [
+      //                 ":",
+      //                 [
+      //                   "arn:aws:iam:",
+      //                   {
+      //                     "Ref": "AWS::AccountId"
+      //                   },
+      //                   "root"
+      //                 ]
+      //               ]
+      //             }
+      //           },
+      //           "Action": [
+      //             "kms:*"
+      //           ],
+      //           "Resource": "*"
+      //         }
+      //       ]
+      //     }
+      //   }
+      // },
+      // "KMSKeyAlias": {
+      //   "Type": "AWS::KMS::Alias",
+      //   "Properties": {
+      //     "AliasName": "alias/auth0Key-${self:provider.stage}",
+      //     "TargetKeyId": "KMSKey"
+      //   }
+      // },
+      // "Auth0Secret": {
+      //   "Type": "AWS::SecretsManager::Secret",
+      //   "Properties": {
+      //     "Name": "${self:provider.environment.AUTH_0_SECRET_ID}",
+      //     "Description": "Auth0 secret",
+      //     "KmsKeyId": "KMSKey"
+      //   }
+      // }
     }
   }
 };

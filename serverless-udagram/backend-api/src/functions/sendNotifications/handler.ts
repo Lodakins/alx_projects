@@ -21,9 +21,9 @@ export const handler: SNSHandler = async (event: SNSEvent) => {
   for (const snsRecord of event.Records) {
     const s3EventStr = snsRecord.Sns.Message
     console.log('Processing S3 event', s3EventStr)
-    const s3Event = JSON.parse(s3EventStr)
+    // const s3Event = JSON.parse(s3EventStr)
 
-    await processS3Event(s3Event)
+    // await processS3Event(s3Event)
   }
 }
 
