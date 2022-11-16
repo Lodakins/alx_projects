@@ -98,7 +98,7 @@ functions:
               'application/json': GroupRequest
 
   GetImages:
-    handler: src/functions/getImages/handler.handler
+    handler: ./src/
     events:
       - http:
           method: get
