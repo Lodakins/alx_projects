@@ -1,4 +1,4 @@
-import {  SNSEvent, SNSHandler, S3Event } from 'aws-lambda'
+import {  SNSEvent, SNSHandler, S3Event, S3Handler } from 'aws-lambda'
 import 'source-map-support/register'
 import * as AWS  from 'aws-sdk'
 
@@ -16,11 +16,11 @@ const connectionParams = {
 
 const apiGateway = new AWS.ApiGatewayManagementApi(connectionParams)
 
-export const handler: SNSHandler = async (event: SNSEvent) => {
+export const handler: S3Handler = async (event: S3Event) => {
   console.log('Processing SNS event ', JSON.stringify(event))
-  for (const snsRecord of event.Records) {
-    const s3EventStr = snsRecord.Sns.Message
-    console.log('Processing S3 event', s3EventStr)
+  for (const record of event.Records) {
+    const key = record.s3.object.key;
+    console.log('Processing S3 event', key)
     // const s3Event = JSON.parse(s3EventStr)
 
     // await processS3Event(s3Event)
