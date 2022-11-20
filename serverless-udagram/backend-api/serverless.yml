@@ -89,6 +89,9 @@ functions:
   Auth:
     handler: src/functions/auth/handler.handler
 
+  RSAAuth:
+    handler: src/functions/rsaAuth/handler.handler
+
   GetGroups:
     handler: src/functions/getGroups/handler.handler
     events:
@@ -104,6 +107,7 @@ functions:
           method: post
           path: groups
           cors: true
+          Authorizer: RSAAuth
           reqValidatorName: RequestBodyValidator
           documentation:
             summary: Create a new group
@@ -134,7 +138,7 @@ functions:
           method: post
           path: groups/{groupId}/images
           cors: true
-          Authorizer: Auth
+          Authorizer: RSAAuth
           reqValidatorName: RequestBodyValidator
           documentation:
             summary: Create a new image
