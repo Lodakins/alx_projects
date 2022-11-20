@@ -24,8 +24,7 @@ export const handler: SNSHandler = async (event: SNSEvent) => {
 async function processImage(record: S3EventRecord) {
   const key = record.s3.object.key
   console.log('Processing S3 item with key: ', key)
-  const response = await s3
-    .getObject({
+  const response = await s3.getObject({
       Bucket: imagesBucketName,
       Key: key
     })
