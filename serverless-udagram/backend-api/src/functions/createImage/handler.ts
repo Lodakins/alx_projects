@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register';
 import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
-import * as middy from 'middy';
+import  middy from 'middy';
 import  { cors} from 'middy/middlewares';
 
 const docClient = new AWS.DynamoDB.DocumentClient()

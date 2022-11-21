@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register'
-import * as middy from 'middy';
+import middy from 'middy';
 import { cors } from 'middy/middlewares';
 import { createGroup } from '../../businessLogic/groups';
 import { CreateGroupRequest } from '../../requests/CreateGroupRequest';
